@@ -5,7 +5,14 @@
 			{
 				"name": "CopyfromSQL",
 				"type": "Copy",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "LookupCDC",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"policy": {
 					"timeout": "0.12:00:00",
 					"retry": 0,
@@ -18,13 +25,30 @@
 					"source": {
 						"type": "AzureSqlSource",
 						"sqlReaderQuery": {
-							"value": "select * from @{pipeline().parameters.schema_name}.@{pipeline().parameters.table_name}",
+							"value": "select * from @{pipeline().parameters.schema_name}.@{pipeline().parameters.table_name} where @{pipeline().parameters.updated} > '@{activity('LookupCDC').output.firstRow.lastload}'",
 							"type": "Expression"
 						},
 						"queryTimeout": "02:00:00",
 						"partitionOption": "None"
 					},
-					"enableStaging": false
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
 				},
 				"inputs": [
 					{
@@ -34,10 +58,129 @@
 							"schema_name": {
 								"value": "@pipeline().parameters.schema_name",
 								"type": "Expression"
+							},
+							"table_name": {
+								"value": "@pipeline().parameters.table_name",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "brz_parquet_dest_ds",
+						"type": "DatasetReference",
+						"parameters": {
+							"folder_name": {
+								"value": "@pipeline().parameters.table_name",
+								"type": "Expression"
+							},
+							"file_name": {
+								"value": "@{pipeline().parameters.table_name}_bronze",
+								"type": "Expression"
 							}
 						}
 					}
 				]
+			},
+			{
+				"name": "LookupCDC",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "brz_cdc_src_ds",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "Lookup_Max_Date",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "CopyfromSQL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "@concat(\n    'SELECT MAX(',\n    pipeline().parameters.updated,\n    ') AS max_cdc FROM ',\n    pipeline().parameters.schema_name,\n    '.',\n    pipeline().parameters.table_name\n)",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "brz_sql_src_ds",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema_name": {
+								"value": "@pipeline().parameters.schema_name",
+								"type": "Expression"
+							},
+							"table_name": {
+								"value": "@pipeline().parameters.table_name",
+								"type": "Expression"
+							}
+						}
+					}
+				}
+			},
+			{
+				"name": "SetMaxCDC",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Lookup_Max_Date",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "cdc",
+					"value": {
+						"value": "@activity('Lookup_Max_Date').output.firstRow.max_cdc",
+						"type": "Expression"
+					}
+				}
 			}
 		],
 		"parameters": {
@@ -52,6 +195,11 @@
 			"updated": {
 				"type": "string",
 				"defaultValue": "updated_at"
+			}
+		},
+		"variables": {
+			"cdc": {
+				"type": "String"
 			}
 		},
 		"annotations": []
