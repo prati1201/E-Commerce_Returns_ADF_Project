@@ -1,0 +1,15 @@
+{
+	"name": "ret-adf",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "australiaeast",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "5f851a0c-3eae-4f12-be7e-ddf4c98f561d",
+		"tenantId": "8fa1f73c-0440-490a-9470-40f77fbc2592"
+	}
+}
