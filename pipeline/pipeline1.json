@@ -47,7 +47,13 @@
 								},
 								"dataset": {
 									"referenceName": "brz_cdc_src_ds",
-									"type": "DatasetReference"
+									"type": "DatasetReference",
+									"parameters": {
+										"folder_name": {
+											"value": "@item().table_name",
+											"type": "Expression"
+										}
+									}
 								}
 							}
 						},
@@ -202,7 +208,10 @@
 									"additionalColumns": [
 										{
 											"name": "lastload",
-											"value": "@activity('Lookup_Max_Date').output.firstRow.max_cdc"
+											"value": {
+												"value": "@activity('Lookup_Max_Date').output.firstRow.max_cdc",
+												"type": "Expression"
+											}
 										}
 									],
 									"storeSettings": {
@@ -317,6 +326,7 @@
 					],
 					"storeSettings": {
 						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
 						"enablePartitionDiscovery": false
 					},
 					"formatSettings": {
