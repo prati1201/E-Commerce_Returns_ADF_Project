@@ -5,14 +5,7 @@
 			{
 				"name": "ForEachTable",
 				"type": "ForEach",
-				"dependsOn": [
-					{
-						"activity": "Get Metadata",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
+				"dependsOn": [],
 				"userProperties": [],
 				"typeProperties": {
 					"items": {
@@ -49,10 +42,8 @@
 									"referenceName": "brz_cdc_src_ds",
 									"type": "DatasetReference",
 									"parameters": {
-										"folder_name": {
-											"value": "@item().table_name",
-											"type": "Expression"
-										}
+										"folder_name": "cdc",
+										"file_name": "cdc.json"
 									}
 								}
 							}
@@ -139,61 +130,9 @@
 							]
 						},
 						{
-							"name": "Lookup_Max_Date",
-							"type": "Lookup",
-							"dependsOn": [
-								{
-									"activity": "CopyfromSQL",
-									"dependencyConditions": [
-										"Succeeded"
-									]
-								}
-							],
-							"policy": {
-								"timeout": "0.12:00:00",
-								"retry": 0,
-								"retryIntervalInSeconds": 30,
-								"secureOutput": false,
-								"secureInput": false
-							},
-							"userProperties": [],
-							"typeProperties": {
-								"source": {
-									"type": "AzureSqlSource",
-									"sqlReaderQuery": {
-										"value": "@concat(\n    'SELECT MAX(',\n    item().updated,\n    ') AS max_cdc FROM ',\n    item().schema_name,\n    '.',\n    item().table_name\n)",
-										"type": "Expression"
-									},
-									"queryTimeout": "02:00:00",
-									"partitionOption": "None"
-								},
-								"dataset": {
-									"referenceName": "brz_sql_src_ds",
-									"type": "DatasetReference",
-									"parameters": {
-										"schema_name": {
-											"value": "@item().schema_name",
-											"type": "Expression"
-										},
-										"table_name": {
-											"value": "@item().table_name",
-											"type": "Expression"
-										}
-									}
-								}
-							}
-						},
-						{
 							"name": "CopyCDC",
 							"type": "Copy",
-							"dependsOn": [
-								{
-									"activity": "Lookup_Max_Date",
-									"dependencyConditions": [
-										"Succeeded"
-									]
-								}
-							],
+							"dependsOn": [],
 							"policy": {
 								"timeout": "0.12:00:00",
 								"retry": 0,
@@ -302,36 +241,6 @@
 							}
 						}
 					]
-				}
-			},
-			{
-				"name": "Get Metadata",
-				"type": "GetMetadata",
-				"dependsOn": [],
-				"policy": {
-					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"dataset": {
-						"referenceName": "brz_metadata_src_ds",
-						"type": "DatasetReference"
-					},
-					"fieldList": [
-						"childItems"
-					],
-					"storeSettings": {
-						"type": "AzureBlobFSReadSettings",
-						"recursive": true,
-						"enablePartitionDiscovery": false
-					},
-					"formatSettings": {
-						"type": "DelimitedTextReadSettings"
-					}
 				}
 			}
 		],
