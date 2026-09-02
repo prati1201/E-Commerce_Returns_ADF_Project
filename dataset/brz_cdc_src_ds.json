@@ -5,14 +5,6 @@
 			"referenceName": "ls_adls",
 			"type": "LinkedServiceReference"
 		},
-		"parameters": {
-			"folder_name": {
-				"type": "string"
-			},
-			"file_name": {
-				"type": "string"
-			}
-		},
 		"annotations": [],
 		"type": "Json",
 		"typeProperties": {
