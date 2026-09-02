@@ -8,9 +8,6 @@
 		"parameters": {
 			"folder_name": {
 				"type": "string"
-			},
-			"file_name": {
-				"type": "string"
 			}
 		},
 		"annotations": [],
@@ -18,10 +15,7 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobFSLocation",
-				"fileName": {
-					"value": "@dataset().file_name",
-					"type": "Expression"
-				},
+				"fileName": "cdc.json",
 				"folderPath": {
 					"value": "@dataset().folder_name",
 					"type": "Expression"
